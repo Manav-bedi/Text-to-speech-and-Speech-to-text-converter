@@ -1,0 +1,113 @@
+#using python
+import tkinter as tk
+from tkinter import messagebox, filedialog
+import speech_recognition as sr
+import pyttsx3
+
+# Initialize text-to-speech engine and recognizer
+text_speech = pyttsx3.init()
+recognizer = sr.Recognizer()
+
+# Functions
+def record_speech():
+    """Record speech and convert it to text."""
+    try:
+        with sr.Microphone() as source:
+            status_label.config(text="Listening... Speak now!")
+            root.update()  # Update the UI to show "Listening..."
+            recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            audio = recognizer.listen(source)
+            text = recognizer.recognize_google(audio)
+            text_output.insert(tk.END, text + "\n")  # Display the text in the output box
+            save_text_to_file(text)
+            status_label.config(text="Speech recorded and saved successfully.")
+    except sr.UnknownValueError:
+        status_label.config(text="Sorry, I could not understand the audio.")
+    except sr.RequestError as e:
+        status_label.config(text=f"Request Error: {e}")
+    except Exception as e:
+        status_label.config(text=f"Error: {str(e)}")
+
+def save_text_to_file(text):
+    """Save the converted text to a file."""
+    with open("output.txt", "a") as f:
+        f.write(text + "\n")
+
+def convert_text_to_speech():
+    """Convert the entered text into speech."""
+    text = text_input.get("1.0", tk.END).strip()  # Get text from the input box
+    if text:
+        text_speech.say(text)
+        text_speech.runAndWait()
+        status_label.config(text="Text converted to speech.")
+    else:
+        messagebox.showerror("Error", "No text entered to convert!")
+
+def clear_text():
+    """Clear the text fields."""
+    text_output.delete("1.0", tk.END)
+    text_input.delete("1.0", tk.END)
+    status_label.config(text="Text fields cleared.")
+
+def open_output_file():
+    """Open the output.txt file."""
+    try:
+        file_path = filedialog.askopenfilename(initialdir=".", title="Open Output File",
+                                               filetypes=(("Text Files", ".txt"), ("All Files", ".*")))
+        if file_path:
+            with open(file_path, "r") as file:
+                content = file.read()
+                messagebox.showinfo("File Content", content)
+    except Exception as e:
+        messagebox.showerror("Error", f"Unable to open file: {e}")
+
+# GUI Setup
+root = tk.Tk()
+root.title("Speech-to-Text & Text-to-Speech Tool")
+root.geometry("600x500")
+
+# Widgets
+title_label = tk.Label(root, text="Speech-to-Text & Text-to-Speech Tool", font=("Helvetica", 16))
+title_label.pack(pady=10)
+
+frame = tk.Frame(root)
+frame.pack(pady=5)
+
+# Text-to-Speech Section
+text_input_label = tk.Label(frame, text="Enter Text for Text-to-Speech:", font=("Helvetica", 12))
+text_input_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+text_input = tk.Text(frame, height=4, width=40)
+text_input.grid(row=1, column=0, padx=10, pady=5, sticky="w")
+
+convert_btn = tk.Button(frame, text="Convert to Speech", command=convert_text_to_speech, width=20, bg="lightblue")
+convert_btn.grid(row=2, column=0, padx=10, pady=5, sticky="w")
+
+# Speech-to-Text Section
+record_btn = tk.Button(root, text="Record Speech", command=record_speech, width=20, bg="lightgreen")
+record_btn.pack(pady=10)
+
+text_output_label = tk.Label(root, text="Converted Text:", font=("Helvetica", 12))
+text_output_label.pack(pady=5)
+
+text_output = tk.Text(root, height=10, width=60, state="normal")
+text_output.pack(pady=5)
+
+# Bottom Frame
+bottom_frame = tk.Frame(root)
+bottom_frame.pack(pady=10)
+
+clear_btn = tk.Button(bottom_frame, text="Clear Text", command=clear_text, width=15, bg="orange")
+clear_btn.grid(row=0, column=0, padx=10)
+
+open_btn = tk.Button(bottom_frame, text="Open Output File", command=open_output_file, width=15, bg="lightgray")
+open_btn.grid(row=0, column=1, padx=10)
+
+exit_btn = tk.Button(bottom_frame, text="Exit", command=root.quit, width=15, bg="red")
+exit_btn.grid(row=0, column=2, padx=10)
+
+# Status Label
+status_label = tk.Label(root, text="Welcome! Select an option to begin.", font=("Helvetica", 10), fg="blue")
+status_label.pack(pady=10)
+
+# Run the Application
+root.mainloop()
